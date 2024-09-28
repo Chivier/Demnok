@@ -39,11 +39,18 @@ def get_cost_for_knn(n, k, vector_length, bucket_size, memory_mb):
     factor = 1 # approximate factor
     one_bucket_time_cost = time_cost_for_scan_one_bucket(bucket_size, memory_mb, vector_length)
 
-    one_bucket_s3_cost = s3_cost_for_scan_one_bucket(bucket_size)
+    # one_bucket_s3_cost = s3_cost_for_scan_one_bucket(bucket_size)
+    one_bucket_s3_cost = 0
     one_bucket_lambda_cost = get_cost_for_lambda_duration(one_bucket_time_cost, memory_mb)
     one_bucket_request_cost = get_cost_for_lambda_request_count(1)
-    total_cost = k * (one_bucket_s3_cost + one_bucket_lambda_cost + one_bucket_request_cost)
+
+    scan_cnt = n * vector_size * 4 * 0.003 / bucket_size
+    print("scan_cnt: ", scan_cnt)
+    total_cost = scan_cnt * (one_bucket_s3_cost + one_bucket_lambda_cost + one_bucket_request_cost)
+    print("one_bucket_s3_cost: ", one_bucket_s3_cost)
+    print("one_bucket_lambda_cost: ", one_bucket_lambda_cost)
+    print("one_bucket_request_cost: ", one_bucket_request_cost)
     return total_cost
 
-print(get_cost_for_knn(1000000, 10, 128, 1024, 10240))
+print(get_cost_for_knn(1000000, 10, 8192, 1024, 10240))
 

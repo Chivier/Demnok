@@ -31,13 +31,13 @@ def get_cost_for_lambda_memory(memory_mb):
 def get_cost_for_s3_write(size_mb):
     # S3 Standard pricing for PUT, COPY, POST, or LIST requests
     request_cost = 0.0000005  # $0.0000005 per request
-    data_cost = 0.000005 * size_mb  # $0.005 per GB
+    data_cost = 0.000005 * size_mb / 1024  # $0.005 per GB
     return request_cost + data_cost
 
 def get_cost_for_s3_read(size_mb):
     # S3 Standard pricing for GET and SELECT requests
     request_cost = 0.0000004  # $0.0000004 per request
-    data_cost = 0.0000004 * size_mb  # $0.0004 per GB
+    data_cost = 0.0000004 * size_mb / 1024  # $0.0004 per GB
     return request_cost + data_cost
     
 # x86 Price
