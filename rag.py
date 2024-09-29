@@ -6,6 +6,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, HnswConfigDiff, QueryRequest
 from datasets import load_dataset
 from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
 
 ## Load dataset
 wiki_questions_answer = load_dataset("rag-datasets/rag-mini-wikipedia", "question-answer")
@@ -40,7 +41,7 @@ if os.path.exists("embedding_lst.pkl"):
     embedding_lst = pickle.load(open("embedding_lst.pkl", "rb"))
 else:
     with ThreadPoolExecutor(max_workers=64) as executor:
-        embedding_lst = list(executor.map(embedding_agent.encode, docs))
+        embedding_lst = [executor.submit(embedding_agent.encode, doc) for doc in tqdm(docs, desc="Embedding")]
 
     pickle.dump(embedding_lst, open("embedding_lst.pkl", "wb"))
 
