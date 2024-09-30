@@ -56,10 +56,9 @@ client.upsert(
     ]
 )
 
-def RAG():
-    chat_agent = SimpleChatAgent()
-    example_question = questions[0]
-    query_vector = embedding_agent.encode(example_question)
+chat_agent = SimpleChatAgent()
+def RAG(question):
+    query_vector = embedding_agent.encode(question)
 
     similar_doc_ids = client.search(
         collection_name=collection_name,
@@ -71,12 +70,39 @@ def RAG():
 
     similar_doc_string = ", ".join(similar_docs)
 
-    prompt = f'''Using the folloing information: {similar_doc_string}. Answer the following question in less than 5-7 words, if possible: {example_question}'''
+    prompt = f'''Using the folloing information: {similar_doc_string}. Answer the following question in less than 5-7 words, if possible: {question}'''
 
     response = chat_agent.chat(prompt)
 
-    print(f"Answer: {response}")
+    # print(f"Question: {question}")
+    # print(f"Answer: {response}")
+    return response
 
-RAG()
+def CoT_RAG():
+    example_question = questions[0]
+    fst_prompt = f'''
+    Here is the question: {example_question}  
+    Before answering this question, what sub-questions need to be addressed? 
+    Please list them one by one and add ## before you state these questions.
+    Do not assign numbers as the bullet points.
+    '''
+    answer = chat_agent.chat(fst_prompt)
+    sub_questions = answer.split("##")
+    sub_questions = [q.strip() for q in sub_questions[1:]]
+    previous_prompt = ""
+    for i, q in enumerate(sub_questions):
+        if not previous_prompt:
+            answer = RAG(q)
+            previous_prompt = f"Q: {q}\nA: {answer}"
+        else:
+            post_q = f"{previous_prompt}\nQ: {q}"
+            answer = RAG(post_q)
+            previous_prompt = f"{previous_prompt}\nQ: {q}\nA: {answer}"
+    
+    last_prompt = f"{previous_prompt}\nQ: {example_question}"
+    answer = RAG(last_prompt)
+    print(f"Final Answer: {answer}")
+    return answer
 
+CoT_RAG()
 
