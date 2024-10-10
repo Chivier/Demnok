@@ -1,7 +1,7 @@
 import pickle
 import os
 
-from nerif.nerif_agent import SimpleChatAgent, SimpleEmbeddingAgent
+from nerif.agent import SimpleChatAgent, SimpleEmbeddingAgent
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, HnswConfigDiff, QueryRequest
 from datasets import load_dataset
@@ -11,7 +11,7 @@ import time
 
 ## Load dataset
 wiki_questions_answer = load_dataset("rag-datasets/rag-mini-wikipedia", "question-answer")
-questions = wiki_questions_answer["test"]["question"][:20]
+questions = wiki_questions_answer["test"]["question"]
 wiki_passages = load_dataset("rag-datasets/rag-mini-wikipedia", "text-corpus")
 docs = wiki_passages["passages"]["passage"]
 
@@ -19,7 +19,7 @@ docs = wiki_passages["passages"]["passage"]
 client = QdrantClient(path="/home/jysc/qdrant-store")
 collection_name = "wiki"
 
-if client.get_collection(collection_name):
+if client.collection_exists(collection_name):
     client.delete_collection(collection_name)
     print(f"Collection '{collection_name}' deleted.")
 else:
@@ -43,7 +43,8 @@ if os.path.exists("embedding_lst.pkl"):
 else:
     with ThreadPoolExecutor(max_workers=64) as executor:
         embedding_lst = [executor.submit(embedding_agent.encode, doc) for doc in tqdm(docs, desc="Embedding")]
-
+    
+    embedding_lst = [e.result() for e in embedding_lst]
     pickle.dump(embedding_lst, open("embedding_lst.pkl", "wb"))
 
 client.upsert(
