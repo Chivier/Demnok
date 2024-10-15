@@ -1,3 +1,8 @@
 nerif
 datasets
 qdrant-client
+boto3
+transformers
+torch
+torchaudio
+torchvision
