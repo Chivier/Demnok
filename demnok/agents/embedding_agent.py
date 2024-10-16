@@ -16,7 +16,7 @@ class HFInstructEmbeddingAgent:
             torch_dtype=torch_dtype, 
             cache_dir=cache_dir, 
             trust_remote_code=True, 
-            device_map="auto")
+            device_map="cuda:0")
         self.model.eval()
         self.device = self.model.device
     
@@ -70,7 +70,7 @@ class HFSimpleEmbeddingAgent:
             torch_dtype=torch_dtype, 
             cache_dir=cache_dir, 
             trust_remote_code=True,
-            device_map="auto")
+            device_map="cuda:0")
         self.model.eval()
         self.device = self.model.device
         
@@ -91,18 +91,5 @@ class HFSimpleEmbeddingAgent:
         
         return embeddings.tolist()
     
-# def get_detailed_instruct(task_description: str, query: str) -> str:
-#         return f'Instruct: {task_description}\nQuery: {query}'
-    
-# a = HFEmbeddingAgent("intfloat/e5-mistral-7b-instruct", torch_dtype=torch.float16)
-# task = 'Given a web search query, retrieve relevant passages that answer the query'
-
-simple_a = HFSimpleEmbeddingAgent("katanemo/bge-large-en-v1.5", torch_dtype=torch.float32)
-queries = [
-    'how much protein should a female eat',
-    'summit define'
-]
-
-ans = simple_a.encode(queries)
-print(len(ans))
-print(len(ans[0]))
+def get_detailed_instruct(task_description: str, query: str) -> str:
+        return f'Instruct: {task_description}\nQuery: {query}'
