@@ -3,7 +3,7 @@ import torch
 from typing import List
 import re
 
-class HFChatEngine:
+class HFChatAgent:
     def __init__(self, model_name: str, torch_dtype: torch.dtype, cache_dir: str = None):
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name, 
@@ -18,11 +18,14 @@ class HFChatEngine:
         self.model.eval()
         self.device = self.model.device
     
-    def generate(self, 
-                 inputs: List[str], 
-                 max_new_tokens: int = 256
+    def chat(self, 
+                 inputs: List[str] | str, 
+                 max_new_tokens: int = 300
                  ) -> List[str] | str:
         
+        if isinstance(inputs, str):
+            inputs = [inputs]
+            
         inputs = [[{"role": "user", "content": msg}] for msg in inputs]
         self.tokenizer.pad_token = self.tokenizer.eos_token
         input_ids = self.tokenizer.apply_chat_template(

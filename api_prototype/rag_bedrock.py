@@ -5,7 +5,7 @@ import pickle
 import os
 
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, VectorParams, PointStruct, HnswConfigDiff, QueryRequest
+from qdrant_client.models import Distance, VectorParams, PointStruct, HnswConfigDiff
 from datasets import load_dataset
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm

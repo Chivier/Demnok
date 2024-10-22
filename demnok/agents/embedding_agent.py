@@ -3,9 +3,13 @@ import torch
 from torch import Tensor
 import torch.nn.functional as F
 from typing import List
+import pickle
+import os
+from concurrent.futures import ThreadPoolExecutor
+from tqdm import tqdm
 
 class HFInstructEmbeddingAgent:
-    def __init__(self, model_name: str, torch_dtype: torch.dtype, cache_dir: str = None):
+    def __init__(self, model_name: str, torch_dtype: torch.dtype, chunks: List[str], cache_dir: str = None):
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name, 
             torch_dtype=torch_dtype, 
@@ -19,6 +23,7 @@ class HFInstructEmbeddingAgent:
             device_map="cuda:0")
         self.model.eval()
         self.device = self.model.device
+        self.chunks = chunks
     
     def last_token_pool(self, 
                         last_hidden_states: Tensor,
@@ -34,17 +39,15 @@ class HFInstructEmbeddingAgent:
                 torch.arange(batch_size, device=last_hidden_states.device), 
                 sequence_lengths
                 ]
-            
-    def sanity_check(self, _input: str) -> None:
-        # FIXME: This is a temporary solution. We need to find a better way to handle this.
-        if "Instruct" not in _input and "instruct" not in _input:
-            raise ValueError("Instruct not found in input. If your model is not trained with instructions, please use HFSimpleEmbeddingAgent.")
         
     def encode(self, 
                inputs: List[str] | str, 
                max_length: int = 4096
                ) -> List[List[float]] | List[float]:
-        self.sanity_check(inputs[0])
+        
+        if isinstance(inputs, str):
+            inputs = [inputs]
+
         inputs = self.tokenizer(
             inputs, 
             max_length=max_length, 
@@ -57,9 +60,26 @@ class HFInstructEmbeddingAgent:
         embeddings = F.normalize(embeddings, p=2, dim=1)
         
         return embeddings.tolist()
+    
+    def get_corpus_embeddings(self, embedding_store_path="embedding_lst", max_length: int = 4096) -> List[List[float]]:
+        assert self.chunks is not None, "Docs is not given. Please provide corpus documents."
+        encoder_partial = lambda chunk: self.encode(chunk, max_length)
+        if os.path.exists(embedding_store_path):
+            embedding_lst = pickle.load(open(embedding_store_path, "rb"))
+        else:
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                futures = [executor.submit(encoder_partial, chunk)
+                                    for chunk in self.chunks]
+                embedding_lst = [f.result()[0] for f in tqdm(futures, desc="Embedding")]
+
+            pickle.dump(embedding_lst, open(embedding_store_path, "wb"))
+        return embedding_lst
+
+    def get_corpus_chunks(self) -> List[str]:
+        return self.chunks
 
 class HFSimpleEmbeddingAgent:
-    def __init__(self, model_name: str, torch_dtype: torch.dtype, cache_dir: str = None):
+    def __init__(self, model_name: str, torch_dtype: torch.dtype, chunks: List[str], cache_dir: str = None):
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_name, 
             torch_dtype=torch_dtype, 
@@ -73,6 +93,7 @@ class HFSimpleEmbeddingAgent:
             device_map="cuda:0")
         self.model.eval()
         self.device = self.model.device
+        self.chunks = chunks
         
     def encode(self, 
                inputs: List[str] | str, 
@@ -90,6 +111,23 @@ class HFSimpleEmbeddingAgent:
         embeddings = F.normalize(embeddings, p=2, dim=1)
         
         return embeddings.tolist()
+    
+    def get_corpus_embeddings(self, embedding_store_path="embedding_lst", max_length: int = 4096) -> List[List[float]]:
+        assert self.chunks is not None, "Docs is not given. Please provide corpus documents."
+        encoder_partial = lambda chunk: self.encode(chunk, max_length)
+        if os.path.exists(embedding_store_path):
+            embedding_lst = pickle.load(open(embedding_store_path, "rb"))
+        else:
+            with ThreadPoolExecutor(max_workers=4) as executor:
+                futures = [executor.submit(encoder_partial, chunk)
+                                    for chunk in self.chunks]
+                embedding_lst = [f.result()[0] for f in tqdm(futures, desc="Embedding")]
+
+            pickle.dump(embedding_lst, open(embedding_store_path, "wb"))
+        return embedding_lst
+
+    def get_corpus_chunks(self) -> List[str]:
+        return self.chunks
     
 def get_detailed_instruct(task_description: str, query: str) -> str:
         return f'Instruct: {task_description}\nQuery: {query}'

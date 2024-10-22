@@ -1,4 +1,4 @@
-from .chatting_agent import HFChatEngine
+from .chatting_agent import HFChatAgent
 from .embedding_agent import HFInstructEmbeddingAgent, HFSimpleEmbeddingAgent
 
-__all__ = ["HFChatEngine", "HFInstructEmbeddingAgent", "HFSimpleEmbeddingAgent"]
+__all__ = ["HFChatAgent", "HFInstructEmbeddingAgent", "HFSimpleEmbeddingAgent"]
