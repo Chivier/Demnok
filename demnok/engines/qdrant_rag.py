@@ -6,7 +6,7 @@ from demnok.core.prompt_templates import (
     SUMMARIZE_PROMPT,
     SIMPLE_COT_TEMPLATE
 )
-
+import random
 
 class QdrantRAGEngine(RAGEngine):
     def __init__(self, 
@@ -45,6 +45,11 @@ class QdrantRAGEngine(RAGEngine):
             similar_doc_string = "\n\n-".join(similar_docs)
             prompt = SIMPLE_RAG_PROMPT.format(similar_doc_string, queries[idx])
             prompts.append(prompt)
+            
+            # random.shuffle(similar_docs)
+            # similar_doc_string = "\n\n-".join(similar_docs)
+            # prompt = SIMPLE_RAG_PROMPT.format(similar_doc_string, queries[idx])
+            # prompts.append(prompt)
 
         answers = self.chat(prompts)
 

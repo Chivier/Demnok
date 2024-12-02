@@ -61,18 +61,13 @@ class HFInstructEmbeddingAgent:
         
         return embeddings.tolist()
     
-    def get_corpus_embeddings(self, embedding_store_path="embedding_lst", max_length: int = 4096) -> List[List[float]]:
+    def get_corpus_embeddings(self, max_length: int = 4096) -> List[List[float]]:
         assert self.chunks is not None, "Docs is not given. Please provide corpus documents."
         encoder_partial = lambda chunk: self.encode(chunk, max_length)
-        if os.path.exists(embedding_store_path):
-            embedding_lst = pickle.load(open(embedding_store_path, "rb"))
-        else:
-            with ThreadPoolExecutor(max_workers=4) as executor:
-                futures = [executor.submit(encoder_partial, chunk)
-                                    for chunk in self.chunks]
-                embedding_lst = [f.result()[0] for f in tqdm(futures, desc="Embedding")]
-
-            pickle.dump(embedding_lst, open(embedding_store_path, "wb"))
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(encoder_partial, chunk)
+                                for chunk in self.chunks]
+            embedding_lst = [f.result()[0] for f in tqdm(futures, desc="Embedding")]
         return embedding_lst
 
     def get_corpus_chunks(self) -> List[str]:
@@ -112,19 +107,47 @@ class HFSimpleEmbeddingAgent:
         
         return embeddings.tolist()
     
-    def get_corpus_embeddings(self, embedding_store_path="embedding_lst", max_length: int = 4096) -> List[List[float]]:
+    def encode_w_mean_pooling(self,
+                              inputs: List[str] | str,
+                              max_length: int = 4096
+                              ) -> List[List[float]] | List[float]:
+        
+        def mean_pooling(model_output, attention_mask):
+            token_embeddings = model_output[0]
+            input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+            return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+
+        inputs = self.tokenizer(
+            inputs, 
+            max_length=max_length, 
+            padding=True, 
+            truncation=True, 
+            return_tensors='pt').to(self.device)
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+
+        embeddings = mean_pooling(outputs, inputs['attention_mask'])
+        embeddings = F.normalize(embeddings, p=2, dim=1)
+        
+        return embeddings.tolist()
+    
+    def get_corpus_w_mean_pooling(self, max_length: int = 4096) -> List[List[float]]:
         assert self.chunks is not None, "Docs is not given. Please provide corpus documents."
-        encoder_partial = lambda chunk: self.encode(chunk, max_length)
-        if os.path.exists(embedding_store_path):
-            embedding_lst = pickle.load(open(embedding_store_path, "rb"))
-        else:
+        encoder_partial = lambda chunk: self.encode_w_mean_pooling(chunk, max_length)
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(encoder_partial, chunk)
+                                for chunk in self.chunks]
+            embedding_lst = [f.result()[0] for f in tqdm(futures, desc="Embedding")]
+        return embedding_lst
+    
+    def get_corpus_embeddings(self, max_length: int = 4096) -> List[List[float]]:
+            assert self.chunks is not None, "Docs is not given. Please provide corpus documents."
+            encoder_partial = lambda chunk: self.encode(chunk, max_length)
             with ThreadPoolExecutor(max_workers=4) as executor:
                 futures = [executor.submit(encoder_partial, chunk)
                                     for chunk in self.chunks]
                 embedding_lst = [f.result()[0] for f in tqdm(futures, desc="Embedding")]
-
-            pickle.dump(embedding_lst, open(embedding_store_path, "wb"))
-        return embedding_lst
+            return embedding_lst
 
     def get_corpus_chunks(self) -> List[str]:
         return self.chunks

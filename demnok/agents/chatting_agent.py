@@ -14,7 +14,7 @@ class HFChatAgent:
             model_name, 
             torch_dtype=torch_dtype, 
             cache_dir=cache_dir, 
-            device_map="auto")
+            device_map="cuda:1")
         self.model.eval()
         self.device = self.model.device
     
