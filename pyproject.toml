@@ -20,7 +20,10 @@ dependencies = [
     "torch",
     "torchaudio",
     "torchvision",
-    "accelerate"
+    "accelerate",
+    "ragchecker",
+    "llama_index",
+    "langchain_text_splitters"
 ]
 requires-python = ">=3.10"
 
