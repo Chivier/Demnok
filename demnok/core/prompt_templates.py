@@ -1,11 +1,19 @@
 SIMPLE_RAG_PROMPT = '''
-With the provided information as context: 
+With the provided information as context:
+<context> 
 {}.
+</context>
 
 Address the following question: {}.
 
 **IMPORTANT**
 - Just output the answer directly. DO NOT add additional explanations or introducement in the answer unless you are asked to.
+'''
+
+DOCUMENT_PROMPT = '''
+<content>
+{}
+</content>
 '''
 
 SIMPLE_COT_TEMPLATE = '''

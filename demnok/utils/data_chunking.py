@@ -1,9 +1,10 @@
 import re
 from typing import List
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from llama_index.core.node_parser import SentenceSplitter
 
 class SimpleTextChunker:
-    def __init__(self, chunk_size: int = 400, overlap: int = 50):
+    def __init__(self, chunk_size: int = 3000, overlap: int = 600):
         self.chunk_size = chunk_size
         self.overlap = overlap
 
@@ -33,6 +34,17 @@ class SimpleTextChunker:
         chunks = splitter.split_text(data)
         return chunks
 
+    def llama_chunk(self, data, tokenizer) -> List[str]:
+        def tokenize_fn(text):
+            return tokenizer.tokenize(text)
+        
+        text_splitter = SentenceSplitter(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.overlap,
+            tokenizer=tokenize_fn,
+        )
+        chunks = text_splitter.split_text(data)
+        return chunks
 
         
         

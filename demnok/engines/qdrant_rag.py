@@ -4,7 +4,8 @@ from demnok.core.prompt_templates import (
     INNER_REVISE_PROMPT, 
     FIRST_RAT_PROMPT,
     SUMMARIZE_PROMPT,
-    SIMPLE_COT_TEMPLATE
+    SIMPLE_COT_TEMPLATE,
+    DOCUMENT_PROMPT
 )
 import random
 
@@ -13,9 +14,11 @@ class QdrantRAGEngine(RAGEngine):
                  embedding_agent, 
                  client,  
                  chat_agent,
+                 random_shuffle=False,
                  **kwargs):
         super().__init__(embedding_agent, client, chat_agent, **kwargs)
         self.collection_name = kwargs.get("collection_name")
+        self.random_shuffle = random_shuffle
     
     def upsert_embeddings(self, docs):
         pass
@@ -40,20 +43,27 @@ class QdrantRAGEngine(RAGEngine):
         if isinstance(queries, str):
             queries = [queries]
         
+        overall_retrieved_docs = []
         for idx, vec in enumerate(query_vectors):
             similar_docs = self.vector_search(vec, k)
-            similar_doc_string = "\n\n-".join(similar_docs)
-            prompt = SIMPLE_RAG_PROMPT.format(similar_doc_string, queries[idx])
-            prompts.append(prompt)
+            if not self.random_shuffle:
+                overall_retrieved_docs.append(similar_docs)
+                similar_docs = [DOCUMENT_PROMPT.format(doc) for doc in similar_docs]
+                similar_doc_string = "".join(similar_docs)
+                prompt = SIMPLE_RAG_PROMPT.format(similar_doc_string, queries[idx])
+                prompts.append(prompt)
             
-            # random.shuffle(similar_docs)
-            # similar_doc_string = "\n\n-".join(similar_docs)
-            # prompt = SIMPLE_RAG_PROMPT.format(similar_doc_string, queries[idx])
-            # prompts.append(prompt)
+            else:
+                random.shuffle(similar_docs)
+                overall_retrieved_docs.append(similar_docs)
+                similar_docs = [DOCUMENT_PROMPT.format(doc) for doc in similar_docs]
+                similar_doc_string = "".join(similar_docs)
+                prompt = SIMPLE_RAG_PROMPT.format(similar_doc_string, queries[idx])
+                prompts.append(prompt)
 
         answers = self.chat(prompts)
 
-        return answers
+        return answers, overall_retrieved_docs
     
     def inner_rat_revise(self, query, subsets, k):
         searched_docs = []

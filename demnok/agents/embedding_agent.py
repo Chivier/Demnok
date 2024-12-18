@@ -20,7 +20,7 @@ class HFInstructEmbeddingAgent:
             torch_dtype=torch_dtype, 
             cache_dir=cache_dir, 
             trust_remote_code=True, 
-            device_map="cuda:0")
+            device_map="cuda:1")
         self.model.eval()
         self.device = self.model.device
         self.chunks = chunks
@@ -64,7 +64,7 @@ class HFInstructEmbeddingAgent:
     def get_corpus_embeddings(self, max_length: int = 4096) -> List[List[float]]:
         assert self.chunks is not None, "Docs is not given. Please provide corpus documents."
         encoder_partial = lambda chunk: self.encode(chunk, max_length)
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=8) as executor:
             futures = [executor.submit(encoder_partial, chunk)
                                 for chunk in self.chunks]
             embedding_lst = [f.result()[0] for f in tqdm(futures, desc="Embedding")]
