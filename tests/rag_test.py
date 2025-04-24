@@ -15,7 +15,7 @@ import os
 parser = argparse.ArgumentParser()
 parser.add_argument("--random_shuffle", action="store_true", default=False)
 parser.add_argument("--dataset", type=str, default="finance")
-parser.add_argument("--chat_model", type=str, default="meta-llama/Llama-3.1-8B-Instruct")
+parser.add_argument("--chat_model", type=str, default="Qwen/Qwen2.5-14B-Instruct-1M")
 args = parser.parse_args()
 
 dataset = args.dataset
@@ -42,14 +42,14 @@ else:
 
 
 embedding_agent = HFInstructEmbeddingAgent(
-    model_name="Alibaba-NLP/gte-Qwen2-1.5B-instruct",
-    torch_dtype=torch.float32,
+    model_name="nvidia/NV-Embed-v2",
+    torch_dtype=torch.float16,
     chunks=chunks
     )
 
 chat_agent = HFChatAgent(
     model_name=args.chat_model,
-    torch_dtype=torch.bfloat16
+    torch_dtype=torch.float16
     )
 
 client = QdrantClient(path="/home/ubuntu/qdrant-store")

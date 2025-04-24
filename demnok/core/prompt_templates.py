@@ -1,19 +1,16 @@
 SIMPLE_RAG_PROMPT = '''
-With the provided information as context:
-<context> 
+Answer the question based on the given document.
+Only give me the answer and do not output any other words.
+The following are given documents:
+<documents> 
 {}.
-</context>
+</documents>
 
 Address the following question: {}.
-
-**IMPORTANT**
-- Just output the answer directly. DO NOT add additional explanations or introducement in the answer unless you are asked to.
 '''
 
 DOCUMENT_PROMPT = '''
-<content>
 {}
-</content>
 '''
 
 SIMPLE_COT_TEMPLATE = '''

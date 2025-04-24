@@ -1,6 +1,6 @@
 from demnok.core import RAGEngine
 
-class QdrantRAGEngine(RAGEngine):
+class FaissRAGEngine(RAGEngine):
     def __init__(self, 
                  embedding_agent, 
                  client,  
@@ -15,13 +15,10 @@ class QdrantRAGEngine(RAGEngine):
         pass
         
     def vector_search(self, query_vector, k):
-        similar_doc_ids = self.client.search(
-            collection_name=self.collection_name,
-            query_vector=query_vector,
-            limit=k
-        )
-
-        similar_docs = [self.chunks[d.id] for d in similar_doc_ids]
+        D, I = self.client.search(query_vector, k)
+        similar_docs = []
+        for indices in I:
+            similar_docs.extend([self.chunks[i] for i in indices])
         return similar_docs
     
     def batch_vector_search(self, query_vectors, k, batch_size):

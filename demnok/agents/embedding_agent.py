@@ -15,12 +15,14 @@ class HFInstructEmbeddingAgent:
             torch_dtype=torch_dtype, 
             cache_dir=cache_dir, 
             trust_remote_code=True)
+
         self.model = AutoModel.from_pretrained(
             model_name, 
             torch_dtype=torch_dtype, 
             cache_dir=cache_dir, 
-            trust_remote_code=True, 
-            device_map="cuda:1")
+            trust_remote_code=True,
+            device_map="auto")
+
         self.model.eval()
         self.device = self.model.device
         self.chunks = chunks
@@ -60,6 +62,34 @@ class HFInstructEmbeddingAgent:
         embeddings = F.normalize(embeddings, p=2, dim=1)
         
         return embeddings.tolist()
+
+    def encode_wo_pooling(self,
+                          inputs: List[str] | str, 
+                          max_length: int = 4096,
+                          is_query: bool = True
+                          ) -> List[List[float]] | List[float]:
+        if isinstance(inputs, str):
+            inputs = [inputs]
+
+        if is_query:
+            task_name_to_instruct = {"example": "Given a question, retrieve passages that answer the question",}
+            query_prefix = "Instruct: "+task_name_to_instruct["example"]+"\nQuery: "
+            query_embeddings = self.model.encode(inputs, instruction=query_prefix, max_length=max_length)
+            embeddings = F.normalize(query_embeddings, p=2, dim=1)
+        else:
+            passage_prefix = ""
+            passage_embeddings = self.model.encode(inputs, instruction=passage_prefix, max_length=max_length)
+            embeddings = F.normalize(passage_embeddings, p=2, dim=1)
+        return embeddings.tolist()
+
+    def get_corpus_embedding_wo_pooling(self, max_length: int = 4096, is_query: bool = False) -> List[List[float]]:
+        assert self.chunks is not None, "Docs is not given. Please provide corpus documents."
+        encoder_partial = lambda chunk: self.encode_wo_pooling(chunk, max_length, is_query)
+        with ThreadPoolExecutor(max_workers=16) as executor:
+            futures = [executor.submit(encoder_partial, chunk)
+                                for chunk in self.chunks]
+            embedding_lst = [f.result()[0] for f in tqdm(futures, desc="Embedding")]
+        return embedding_lst
     
     def get_corpus_embeddings(self, max_length: int = 4096) -> List[List[float]]:
         assert self.chunks is not None, "Docs is not given. Please provide corpus documents."
