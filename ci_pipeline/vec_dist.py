@@ -11,14 +11,21 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from transformers import AutoModel
 import pickle
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-f", "--file",)
+
+args = parser.parse_args()
+targ_file = args.file
 
 # constants
 STEP = 2
 MAX_LEN = 32768
 ENC_DIM = 4096
 WORLD_SIZE = 4
-PASSAGE_FILE = "nodes.jsonl"
-OUTPUT_INDEX = "whole_index.faiss"
+PASSAGE_FILE = f"data/{targ_file}_nodes.jsonl"
+OUTPUT_INDEX = f"data/{targ_file}_index.faiss"
 SHARD_FMT = "index_shard_{}.pkl"
 METRIC = faiss.METRIC_INNER_PRODUCT
 
@@ -39,6 +46,7 @@ def load_my_passages(rank, world_size):
         for i, line in enumerate(f):
             if i % world_size == rank:
                 my_passages.append(json.loads(line))
+            # for testing
     return my_passages
 
 def build_shard(rank):
@@ -97,6 +105,10 @@ def build_shard(rank):
 
         faiss.write_index(final, OUTPUT_INDEX)
         print(f"[rank 0] wrote merged index to {OUTPUT_INDEX}")
+
+    dist.barrier()
+    # 8) cleanup
+    os.remove(SHARD_FMT.format(rank))
 
     cleanup_dist()
 
