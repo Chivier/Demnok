@@ -9,11 +9,13 @@ DATASET = "narrativeqa"
 # answer is the answer
 
 passages = set()
+queries = list()
 
 data = load_dataset('THUDM/LongBench', DATASET, split='test')
 print(data)
 
 for i,line in enumerate(data):
+    queries.append({'question': line['input'], 'answer': line['answers'][0]})
     passage = line['context']
     if passage not in passages:
         passages.add(passage)
@@ -91,3 +93,14 @@ for data in tqdm.tqdm(passages):
             chunk_id += 2
 
     # break
+
+question_id = 2
+
+with open(f"data/{DATASET}_queries.jsonl", "w", encoding="utf-8") as f:
+    for query in queries:
+        f.write(json.dumps({
+            'id': question_id,
+            'answer': query['answer'],
+            'question': query['question']
+        }, ensure_ascii=False) + "\n")
+        question_id += 2

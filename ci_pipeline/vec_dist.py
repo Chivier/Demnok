@@ -9,7 +9,7 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
-from transformers import AutoModel
+from transformers import AutoModel, AutoTokenizer
 import pickle
 import argparse
 
@@ -22,12 +22,22 @@ targ_file = args.file
 # constants
 STEP = 2
 MAX_LEN = 32768
-ENC_DIM = 4096
+ENC_DIM = 3584
 WORLD_SIZE = 4
 PASSAGE_FILE = f"data/{targ_file}_nodes.jsonl"
 OUTPUT_INDEX = f"data/{targ_file}_index.faiss"
 SHARD_FMT = "index_shard_{}.pkl"
 METRIC = faiss.METRIC_INNER_PRODUCT
+
+def last_token_pool(last_hidden_states,
+                 attention_mask):
+    left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0])
+    if left_padding:
+        return last_hidden_states[:, -1]
+    else:
+        sequence_lengths = attention_mask.sum(dim=1) - 1
+        batch_size = last_hidden_states.shape[0]
+        return last_hidden_states[torch.arange(batch_size, device=last_hidden_states.device), sequence_lengths]
 
 def setup_dist():
     """Initialize torch.distributed using env vars set by torchrun."""
@@ -63,22 +73,32 @@ def build_shard(rank):
 
     # 4) load & wrap the model
     model = AutoModel.from_pretrained(
-        "nvidia/NV-Embed-v2",
+        "Alibaba-NLP/gte-Qwen2-7B-instruct",
         trust_remote_code=True,
         torch_dtype=torch.float16
     ).to(rank)
     model = DDP(model, device_ids=[rank], output_device=rank)
+    toker = AutoTokenizer.from_pretrained(
+        "Alibaba-NLP/gte-Qwen2-7B-instruct",
+        trust_remote_code=True,
+        use_fast=False
+    )
+    
 
     # 5) encode, normalize, add to shard
     with torch.no_grad():
         for entry in tqdm(passages, desc=f"rank {rank}", position=rank):
             text = entry["text"]
+            toked_dict = toker([text], max_length=MAX_LEN, padding=True, truncation=True, return_tensors='pt')
+            toked_dict = {k: v.to(rank) for k, v in toked_dict.items()}
             # note: DDP will scatter the forward internally over GPUs
-            emb = model.module.encode(
-                [text],
-                instruction="",
-                max_length=MAX_LEN
+
+            outputs = model.module(
+                **toked_dict,
+                # instruction="",
             )
+            emb = last_token_pool(outputs.last_hidden_state, toked_dict['attention_mask'])
+
             emb = emb.detach().clone() \
                     .div(torch.norm(emb, dim=1, keepdim=True)) \
                     .cpu().numpy()
