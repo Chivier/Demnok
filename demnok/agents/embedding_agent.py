@@ -22,6 +22,10 @@ class HFInstructEmbeddingAgent:
             cache_dir=cache_dir, 
             trust_remote_code=True,
             device_map="auto")
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name,
+            trust_remote_code=True
+        )
 
         self.model.eval()
         self.device = self.model.device
@@ -74,7 +78,16 @@ class HFInstructEmbeddingAgent:
         if is_query:
             task_name_to_instruct = {"example": "Given a question, retrieve passages that answer the question",}
             query_prefix = "Instruct: "+task_name_to_instruct["example"]+"\nQuery: "
-            query_embeddings = self.model.encode(inputs, instruction=query_prefix, max_length=max_length)
+            # query_embeddings = self.model.encode(inputs, instruction=query_prefix, max_length=max_length)
+            query_texts = [query_prefix + inp for inp in inputs]
+            tokenized_inputs = self.tokenizer(
+                query_texts, 
+                max_length=max_length, 
+                padding=True, 
+                truncation=True, 
+                return_tensors='pt').to(self.device)
+            out = self.model(**tokenized_inputs)
+            query_embeddings = self.last_token_pool(out.last_hidden_state, tokenized_inputs['attention_mask'])
             embeddings = F.normalize(query_embeddings, p=2, dim=1)
         else:
             passage_prefix = ""

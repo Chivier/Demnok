@@ -10,6 +10,7 @@ from tqdm import tqdm
 import argparse
 import os
 import numpy as np
+import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--random_shuffle", action="store_true")
@@ -30,12 +31,12 @@ with open(os.path.join(DATASET_DIR, f'{dataset}_nodes.jsonl'), 'r') as file:
 with open(os.path.join(DATASET_DIR, f'{dataset}_nodes.jsonl'), 'r') as file:
     for line in file:
         node = json.loads(line)
-        corpus_indexed[node['chunk_id']] = node
+        corpus_indexed[node['chunk_id']] = node['text']
 
 
 chunks = corpus
 embedding_agent = HFInstructEmbeddingAgent(
-    model_name="nvidia/NV-Embed-v2",
+    model_name="Alibaba-NLP/gte-Qwen2-7B-instruct",
     torch_dtype=torch.float16,
     chunks=chunks
 )
@@ -67,7 +68,7 @@ chat_agent = HFChatAgent(
     torch_dtype=torch.float16
 )
 
-engine = FaissRAGEngine(embedding_agent, index, chat_agent, random_shuffle=args.random_shuffle, d_chunks=corpus)
+engine = FaissRAGEngine(embedding_agent, index, chat_agent, random_shuffle=args.random_shuffle, d_chunks=corpus_indexed)
 
 with open(f"data/{dataset}_queries.jsonl", 'r') as file:
     queries = [json.loads(line) for line in file]
@@ -75,7 +76,7 @@ with open(f"data/{dataset}_queries.jsonl", 'r') as file:
 # … everything up to loading chat_agent and engine …
 
 # define all the Ks you want to sweep over
-k_values = [15]
+k_values = [3]
 batch_size = 4
 
 # load your queries once
@@ -95,9 +96,12 @@ for k in k_values:
         gt_answers  = [q["answer"]   for q in batch]
 
         # retrieve & answer with the current k
-        batch_answers, batch_docs = engine.rag(queries_txt, k, max_new_tokens=256)
+        batch_answers, batch_docs = engine.rag(queries_txt, k, max_new_tokens=10000)
+        dethinked_answers = [re.search(r"<think>.*</think>(.*)", ans, re.DOTALL).group(1) for ans in batch_answers]
 
-        for qid, qt, gt, ans, docs in zip(query_ids, queries_txt, gt_answers, batch_answers, batch_docs):
+        # print(batch_answers, dethinked_answers)
+
+        for qid, qt, gt, ans, docs in zip(query_ids, queries_txt, gt_answers, dethinked_answers, batch_docs):
             em, f1, prec, recall = eval_answer(ans, gt)
             metrics_results["em"].append(em)
             metrics_results["f1"].append(f1)
