@@ -14,6 +14,7 @@ import re
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--random_shuffle", action="store_true")
+parser.add_argument("--sorted", action="store_true")
 parser.add_argument("--dataset", type=str, default="2wikimqa_e")
 parser.add_argument("--chat_model", type=str, default="Qwen/Qwen3-8B")
 args = parser.parse_args()
@@ -21,6 +22,10 @@ args = parser.parse_args()
 dataset = args.dataset
 
 DATASET_DIR = f"data"
+
+# assert not args.sorted or not args.rev_sorted, "You cannot sort and reverse sort at the same time!"
+
+print(args)
 
 corpus = []
 corpus_indexed = dict()
@@ -68,7 +73,7 @@ chat_agent = HFChatAgent(
     torch_dtype=torch.float16
 )
 
-engine = FaissRAGEngine(embedding_agent, index, chat_agent, random_shuffle=args.random_shuffle, d_chunks=corpus_indexed)
+engine = FaissRAGEngine(embedding_agent, index, chat_agent, random_shuffle=args.random_shuffle, d_chunks=corpus_indexed, reorder=args.sorted)
 
 with open(f"data/{dataset}_queries.jsonl", 'r') as file:
     queries = [json.loads(line) for line in file]
@@ -76,7 +81,7 @@ with open(f"data/{dataset}_queries.jsonl", 'r') as file:
 # … everything up to loading chat_agent and engine …
 
 # define all the Ks you want to sweep over
-k_values = [3]
+k_values = [i for i in range(2, 16)]
 batch_size = 4
 
 # load your queries once
@@ -129,7 +134,7 @@ for k in k_values:
         out_dir  = "ragchecker_inputs"
         out_name = f"{args.chat_model}_{dataset}_shuffle_k{k}_results.json"
     else:
-        out_dir  = "../results"
+        out_dir  = "results"
         out_name = f"{args.chat_model}_{dataset}_k{k}_results.json"
     output_path = os.path.join(out_dir, out_name)
     output_dirs = os.path.dirname(output_path)

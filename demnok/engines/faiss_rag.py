@@ -7,22 +7,28 @@ class FaissRAGEngine(RAGEngine):
                  chat_agent,
                  random_shuffle=False,
                  d_chunks=None,
+                 reorder=False,
                  **kwargs):
         super().__init__(embedding_agent, client, chat_agent, **kwargs)
         self.collection_name = kwargs.get("collection_name")
         self.random_shuffle = random_shuffle
         self.d_chunks = d_chunks
+        self.reorder = reorder
     
     def upsert_embeddings(self, docs):
         pass
         
     def vector_search(self, query_vector, k):
         D, I = self.client.search(query_vector, k)
-        similar_docs = []
-        print(I)
-        for indices in I:
-            similar_docs.extend([self.d_chunks[i] for i in indices])
+        
+        similar_docs = list()
 
+        assert len(D) == 1, "ok, I am not sure where this would break"
+
+        for i in I[0]:
+            similar_docs.append({'id': i, 'text': self.d_chunks[i]})
+
+        print(similar_docs)
         return similar_docs
     
     def batch_vector_search(self, query_vectors, k, batch_size):

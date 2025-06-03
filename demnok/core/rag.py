@@ -47,20 +47,26 @@ class RAGEngine:
         for idx, vec in enumerate(query_vectors):
             vec = np.array(vec).reshape(1, -1)
             similar_docs = self.vector_search(vec, k)
-            if not self.random_shuffle:
-                overall_retrieved_docs.append(similar_docs)
-                similar_docs = [DOCUMENT_PROMPT.format(doc) for doc in similar_docs]
-                similar_doc_string = "".join(similar_docs)
-                prompt = SIMPLE_RAG_PROMPT.format(similar_doc_string, queries[idx])
-                prompts.append(prompt)
-            
-            else:
+
+            if self.random_shuffle:
+                similar_docs = [doc['text'] for doc in similar_docs]
                 random.shuffle(similar_docs)
                 overall_retrieved_docs.append(similar_docs)
-                similar_docs = [DOCUMENT_PROMPT.format(doc) for doc in similar_docs]
-                similar_doc_string = "".join(similar_docs)
-                prompt = SIMPLE_RAG_PROMPT.format(similar_doc_string, queries[idx])
-                prompts.append(prompt)
+            
+            elif self.reorder:
+                similar_docs.sort(key=lambda x: x['id'])
+                similar_docs = [doc['text'] for doc in similar_docs]
+                overall_retrieved_docs.append(similar_docs)
+            
+            else:
+                similar_docs = [doc['text'] for doc in similar_docs]
+                overall_retrieved_docs.append(similar_docs)
+            
+            
+            similar_docs = [DOCUMENT_PROMPT.format(doc) for doc in similar_docs]
+            similar_doc_string = "".join(similar_docs)
+            prompt = SIMPLE_RAG_PROMPT.format(similar_doc_string, queries[idx])
+            prompts.append(prompt)
                 
         answers = self.chat(prompts, max_new_tokens)
 
