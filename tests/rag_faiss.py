@@ -133,6 +133,9 @@ for k in k_values:
     if args.random_shuffle:
         out_dir  = "ragchecker_inputs"
         out_name = f"{args.chat_model}_{dataset}_shuffle_k{k}_results.json"
+    elif args.sorted:
+        out_dir  = "sorted_results"
+        out_name = f"{args.chat_model}_{dataset}_sorted_k{k}_results.json"
     else:
         out_dir  = "results"
         out_name = f"{args.chat_model}_{dataset}_k{k}_results.json"
