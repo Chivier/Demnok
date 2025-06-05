@@ -81,7 +81,7 @@ with open(f"data/{dataset}_queries.jsonl", 'r') as file:
 # … everything up to loading chat_agent and engine …
 
 # define all the Ks you want to sweep over
-k_values = [i for i in range(2, 16)]
+k_values = [15]
 batch_size = 4
 
 # load your queries once
