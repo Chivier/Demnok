@@ -46,28 +46,26 @@ class RAGEngine:
         overall_retrieved_docs = []
         for idx, vec in enumerate(query_vectors):
             vec = np.array(vec).reshape(1, -1)
-            similar_docs = self.vector_search(vec, k)
+            ind_sim_docs = self.vector_search(vec, k)
 
             if self.random_shuffle:
-                similar_docs = [doc['text'] for doc in similar_docs]
-                random.shuffle(similar_docs)
-                overall_retrieved_docs.append(similar_docs)
+                random.shuffle(ind_sim_docs)
+                similar_docs = [doc['text'] for doc in ind_sim_docs]
             
             elif self.reorder:
-                imp_order = [f"Doc[{doc['id']}]" for doc in similar_docs]
+                imp_order = [f"Doc[{doc['id']}]" for doc in ind_sim_docs]
                 imp_string = "And their importance ranking is " + " > ".join(imp_order)
 
-                similar_docs.sort(key=lambda x: x['id'])
-                similar_docs = [f"Doc[{doc['id']}]: \n" + doc['text'] for doc in similar_docs]
-                overall_retrieved_docs.append(similar_docs)
+                ind_sim_docs.sort(key=lambda x: x['id'])
+
+                similar_docs = [f"Doc[{doc['id']}]: \n" + doc['text'] for doc in ind_sim_docs]
 
                 similar_docs.append(imp_string)
             
             else:
-                similar_docs = [f"Doc[{doc['id']}]: \n" + doc['text'] for doc in similar_docs]
-                overall_retrieved_docs.append(similar_docs)
+                similar_docs = [f"Doc[{doc['id']}]: \n" + doc['text'] for doc in ind_sim_docs]
             
-            
+            overall_retrieved_docs.append(ind_sim_docs)
             similar_docs = [DOCUMENT_PROMPT.format(doc) for doc in similar_docs]
             similar_doc_string = "".join(similar_docs)
             prompt = SIMPLE_RAG_PROMPT.format(similar_doc_string, queries[idx])
