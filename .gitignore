@@ -210,3 +210,4 @@ data/*
 faiss_index
 embedding_store
 results
+sorted_results

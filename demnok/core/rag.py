@@ -54,12 +54,17 @@ class RAGEngine:
                 overall_retrieved_docs.append(similar_docs)
             
             elif self.reorder:
+                imp_order = [f"Doc[{doc['id']}]" for doc in similar_docs]
+                imp_string = "And their importance ranking is " + " > ".join(imp_order)
+
                 similar_docs.sort(key=lambda x: x['id'])
-                similar_docs = [doc['text'] for doc in similar_docs]
+                similar_docs = [f"Doc[{doc['id']}]: \n" + doc['text'] for doc in similar_docs]
                 overall_retrieved_docs.append(similar_docs)
+
+                similar_docs.append(imp_string)
             
             else:
-                similar_docs = [doc['text'] for doc in similar_docs]
+                similar_docs = [f"Doc[{doc['id']}]: \n" + doc['text'] for doc in similar_docs]
                 overall_retrieved_docs.append(similar_docs)
             
             
