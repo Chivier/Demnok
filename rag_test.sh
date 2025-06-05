@@ -18,10 +18,10 @@ export CUDA_VISIBLE_DEVICES=0,1
 
 # python tests/rag_faiss.py --chat_model Qwen/Qwen3-8B --dataset musique --sorted
 # python tests/rag_faiss.py --chat_model Qwen/Qwen3-8B --dataset 2wikimqa_e --sorted
-python tests/rag_faiss.py --chat_model Qwen/Qwen3-8B --dataset hotpotqa_e --sorted
-python tests/rag_faiss.py --chat_model Qwen/Qwen3-8B --dataset narrativeqa --sorted
-
 python tests/rag_faiss.py --chat_model Qwen/Qwen3-8B --dataset narrativeqa
+python tests/rag_faiss.py --chat_model Qwen/Qwen3-8B --dataset hotpotqa_e --sorted
+
+python tests/rag_faiss.py --chat_model Qwen/Qwen3-8B --dataset narrativeqa --sorted
 
 python tests/rag_faiss.py --chat_model Qwen/Qwen3-32B --dataset musique
 python tests/rag_faiss.py --chat_model Qwen/Qwen3-32B --dataset 2wikimqa_e

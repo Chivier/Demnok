@@ -26,7 +26,7 @@ class FaissRAGEngine(RAGEngine):
         assert len(D) == 1, "ok, I am not sure where this would break"
 
         for i in I[0]:
-            similar_docs.append({'id': i, 'text': self.d_chunks[i]})
+            similar_docs.append({'id': int(i), 'text': self.d_chunks[i]})
 
         return similar_docs
     

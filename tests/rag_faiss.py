@@ -118,7 +118,7 @@ for k in k_values:
                 "query": qt,
                 "gt_answer": gt,
                 "response": ans,
-                "retrieved_context": [{"text": d} for d in docs],
+                "retrieved_context": docs,
                 "em": em,
                 "f1": f1,
                 "precision": prec,
