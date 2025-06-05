@@ -28,7 +28,6 @@ class FaissRAGEngine(RAGEngine):
         for i in I[0]:
             similar_docs.append({'id': i, 'text': self.d_chunks[i]})
 
-        print(similar_docs)
         return similar_docs
     
     def batch_vector_search(self, query_vectors, k, batch_size):
