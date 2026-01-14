@@ -8,7 +8,7 @@ import time
 import numpy as np
 import pickle
 
-from sglang.api import set_default_backend
+from sglang import set_default_backend
 from sglang.test.test_utils import (
     add_common_sglang_args_and_parse,
     select_sglang_backend,
