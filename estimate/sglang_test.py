@@ -358,12 +358,12 @@ def main(args):
         s += "Please answer a question according to given documents.\n"
         s += prompt
         s += "\n\n**Note**: \n"
-        s += "1. Please answer within 10 words or fewer. If the answer is Yes or No, just say Yes or No\n"
+        s += "1. Please directly answer the question without description. If the answer is Yes or No, just say Yes or No\n"
         # s += "2. Place the answer after ####. For example, if the answer is 42, please write: The answer is 42 #### 42\n"
         s += "2. Do not include any special characters like <answer> or </answer>.\n"
-        s += "3. If there is insufficient information, just say Insufficient information."
+        s += "3. If there is insufficient information, just say 'Insufficient information'."
         s += sgl.user_end()
-        s += "/no_think"
+        # s += "/no_think"
         s += sgl.assistant(sgl.gen("answer", max_tokens=512))
 
     #####################################
