@@ -328,7 +328,7 @@ def main(args):
 
     # Construct prompts
     num_questions = args.num_questions
-    all_requests = list(read_jsonl(data_path))[:10]
+    all_requests = list(read_jsonl(data_path))[:num_questions]
     # if num_questions:
     #     all_requests = all_requests[:num_questions]
     #     used_qids = [r["qid"] for r in all_requests]
