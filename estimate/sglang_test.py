@@ -353,15 +353,16 @@ def main(args):
 
     @sgl.function
     def multi_document_qa(s, prompt):
-        s += "You are a helpful assistant that answers questions based on provided documents.\n"
-        s += sgl.user_begin()
-        s += "Please answer a question according to given documents.\n"
-        s += prompt
-        s += "\n\n**Note**: \n"
+        s += sgl.system_begin()
+        s += "You are a helpful assistant that answers questions directly without description based on provided documents.\n"
         s += "1. Please directly answer the question without description. If the answer is Yes or No, just say Yes or No\n"
         # s += "2. Place the answer after ####. For example, if the answer is 42, please write: The answer is 42 #### 42\n"
         s += "2. Do not include any special characters like <answer> or </answer>.\n"
         s += "3. If there is insufficient information, just say 'Insufficient information'."
+        s += sgl.system_end()
+        s += sgl.user_begin()
+        s += "Please answer a question according to given documents.\n"
+        s += prompt
         s += sgl.user_end()
         # s += "/no_think"
         s += sgl.assistant(sgl.gen("answer", max_tokens=5))
