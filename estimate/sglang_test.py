@@ -364,7 +364,7 @@ def main(args):
         s += "3. If there is insufficient information, just say 'Insufficient information'."
         s += sgl.user_end()
         # s += "/no_think"
-        s += sgl.assistant(sgl.gen("answer", max_tokens=8))
+        s += sgl.assistant(sgl.gen("answer", max_tokens=5))
 
     #####################################
     ########## SGL Program End ##########
